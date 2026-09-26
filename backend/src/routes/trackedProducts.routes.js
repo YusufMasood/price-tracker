@@ -1,5 +1,10 @@
 import express from "express";
 import {
+    getPriceHistory,
+    getAllPriceHistory
+} from "../services/priceHistory.service.js";
+
+import {
     addTrackedProduct,
     getTrackedProducts
 } from "../services/trackedProducts.service.js";
@@ -73,5 +78,95 @@ router.get("/", async (req, res) => {
         });
     }
 });
+
+router.get("/history/export", async (req, res) => {
+    try {
+        const history = await getAllPriceHistory();
+
+        const headers = [
+            "Store Product ID",
+            "Product Name",
+            "Selected Option",
+            "UTC Timestamp",
+            "Price",
+            "Stock",
+            "Outcome"
+        ];
+
+        const rows = history.map(record => [
+            record.store_product_id,
+            record.product_name,
+            record.option_label,
+            new Date(record.scraped_at).toISOString(),
+            record.price ?? "",
+            record.stock ?? "",
+            record.outcome
+        ]);
+
+        const escapeCsv = (value) => {
+            const text = String(value ?? "");
+
+            if (
+                text.includes(",") ||
+                text.includes('"') ||
+                text.includes("\n")
+            ) {
+                return `"${text.replace(/"/g, '""')}"`;
+            }
+
+            return text;
+        };
+
+        const csv = [
+            headers.map(escapeCsv).join(","),
+            ...rows.map(row => row.map(escapeCsv).join(","))
+        ].join("\n");
+
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="price-history.csv"'
+        );
+
+        res.send(csv);
+    } catch (error) {
+        console.error("CSV EXPORT ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to export price history"
+        });
+    }
+});
+
+router.get("/:id/history", async (req, res) => {
+    try {
+        const trackedProductId = Number(req.params.id);
+
+        if (!Number.isInteger(trackedProductId) || trackedProductId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid tracked product ID"
+            });
+        }
+
+        const history = await getPriceHistory(trackedProductId);
+
+        res.json({
+            success: true,
+            count: history.length,
+            data: history
+        });
+
+    } catch (error) {
+        console.error("PRICE HISTORY ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch price history"
+        });
+    }
+});
+
 
 export default router;

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import testScrapeRoutes from "./routes/testScrape.routes.js";
 import productsRouter from "./routes/products.routes.js";
 import { syncCatalog } from "./services/catalogSync.service.js";
 import trackedProductsRouter from "./routes/trackedProducts.routes.js";
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/products", productsRouter);
 app.use("/api/tracked-products", trackedProductsRouter);
+app.use("/api/test-scrape", testScrapeRoutes);
 
 app.get("/api/health", (req, res) => {
     res.json({

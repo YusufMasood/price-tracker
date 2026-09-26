@@ -1,6 +1,22 @@
 import { supabase } from "../db/supabase.js";
 
 export async function addTrackedProduct(product) {
+    const { data: existingProduct, error: existingError } =
+        await supabase
+            .from("tracked_products")
+            .select("*")
+            .eq("store_product_id", product.productId)
+            .eq("option_id", product.optionId)
+            .maybeSingle();
+
+    if (existingError) {
+        throw existingError;
+    }
+
+    if (existingProduct) {
+        return existingProduct;
+    }
+
     const { data, error } = await supabase
         .from("tracked_products")
         .insert({

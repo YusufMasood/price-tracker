@@ -85,6 +85,26 @@ async function waitForCookieConsent(page) {
     return false;
 }
 
+function normalizePrice(text) {
+    if (!text) {
+        return null;
+    }
+
+    const normalized = text
+        .replace(/[０-９]/g, digit =>
+            String.fromCharCode(
+                digit.charCodeAt(0) - 0xfee0
+            )
+        )
+        .replace(/[₹,\s]/g, "");
+
+    const value = Number(normalized);
+
+    return Number.isFinite(value)
+        ? value
+        : null;
+}
+
 async function moveAcrossPricePanel(page, panel) {
     const box = await panel.boundingBox();
 
@@ -130,7 +150,11 @@ async function moveAcrossPricePanel(page, panel) {
     await page.mouse.move(centerX, centerY);
 }
 
-export async function scrapePrice(productId, optionLabel) {
+export async function scrapePrice(   trackedProductId,
+    productId,
+    productName,
+    optionId,
+    optionLabel) {
     const browser = await chromium.launch({
         headless: false
     });
@@ -356,21 +380,75 @@ export async function scrapePrice(productId, optionLabel) {
             "----- END OFFER PANEL TEXT -----\n"
         );
 
-        // Keep browser open briefly for inspection.
-        console.log(
-            `Keeping browser open for ${INSPECTION_WAIT_MS}ms...`
-        );
+        // ---------------------------------------
+// Extract structured quote data
+// ---------------------------------------
 
-        await page.waitForTimeout(
-            INSPECTION_WAIT_MS
-        );
+const displayedPriceElement =
+    page.locator(".price-value").first();
 
-    } finally {
-        await browser.close();
-    }
+const stockElement =
+    page.locator(".avail-pill").first();
+
+const displayedPriceText =
+    await displayedPriceElement.innerText();
+
+const stockText =
+    await stockElement.innerText().catch(() => "");
+
+const price =
+    normalizePrice(displayedPriceText);
+
+const stockMatch =
+    stockText.match(/(\d[\d,]*)/);
+
+const stock =
+    stockMatch
+        ? Number(stockMatch[1].replace(/,/g, ""))
+        : 0;
+
+
+        const attemptText =
+    await page.locator(".offer-foot span").first().innerText()
+        .catch(() => "");
+
+const attemptMatch =
+    attemptText.match(/(\d+)\s+attempt/i);
+
+const attempts =
+    attemptMatch
+        ? Number(attemptMatch[1])
+        : 1;
+
+const result = {
+    productId,
+    productName,
+    optionId,
+    optionLabel,
+    price,
+    attempts,
+    stock,
+    outcome: "success"
+};
+
+console.log("\n----- STRUCTURED RESULT -----");
+console.log(result);
+console.log("----- END STRUCTURED RESULT -----\n");
+
+
+return result;
+
+} catch (error) {
+
+    console.error(
+        `SCRAPE FAILED: ${productName} | ${optionLabel}`,
+        error.message
+    );
+
+    throw error;
+
+} finally {
+    await browser.close();
+}
 }
 
-await scrapePrice(
-    2884,
-    "Body only"
-);
