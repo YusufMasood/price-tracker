@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:3000/api";
 
 function App() {
     const [query, setQuery] = useState("");
@@ -107,6 +109,9 @@ function App() {
 
         if (!searchQuery) {
             setProducts([]);
+            setSelectedProduct(null);
+            setProductDetails(null);
+            setSelectedOption(null);
             setError("");
             return;
         }
@@ -131,8 +136,18 @@ function App() {
             }
 
             setProducts(data.results);
+
+            // New search = clear previous selection.
+            setSelectedProduct(null);
+            setProductDetails(null);
+            setSelectedOption(null);
+            setTrackingMessage("");
         } catch (error) {
-            console.error("SEARCH ERROR:", error);
+            console.error(
+                "SEARCH ERROR:",
+                error
+            );
+
             setError("Failed to search products.");
             setProducts([]);
         } finally {
@@ -247,8 +262,12 @@ function App() {
 
     return (
         <main className="app">
+
+            {/* HERO / SEARCH */}
+
             <section className="hero-section">
                 <div className="hero-content">
+
                     <p className="eyebrow">
                         INE PRICE TRACKER
                     </p>
@@ -271,9 +290,7 @@ function App() {
                             value={query}
                             placeholder="Search products..."
                             onChange={(event) =>
-                                setQuery(
-                                    event.target.value
-                                )
+                                setQuery(event.target.value)
                             }
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
@@ -292,222 +309,11 @@ function App() {
                                 : "Search"}
                         </button>
                     </div>
+
                 </div>
             </section>
 
             <section className="results-section">
-
-                {/* TRACKED PRODUCTS */}
-
-                <section className="tracked-section">
-                    <div className="section-header">
-                        <div>
-                            <p className="section-label">
-                                YOUR TRACKED PRODUCTS
-                            </p>
-
-                            <h2>
-                                Products you're monitoring
-                            </h2>
-                        </div>
-
-                        <div className="tracked-header-actions">
-                            {trackedProducts.length > 0 && (
-                                <>
-                                    <span className="result-count">
-                                        {trackedProducts.length}{" "}
-                                        tracked
-                                    </span>
-
-                                    <button
-                                        type="button"
-                                        className="export-button"
-                                        onClick={exportCsv}
-                                    >
-                                        EXPORT CSV
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {trackedLoading && (
-                        <div className="empty-state">
-                            Loading tracked products...
-                        </div>
-                    )}
-
-                    {!trackedLoading &&
-                        trackedProducts.length === 0 && (
-                            <div className="empty-state">
-                                No products are being
-                                tracked yet.
-                            </div>
-                        )}
-
-                    {!trackedLoading &&
-                        trackedProducts.length > 0 && (
-                            <div className="tracked-grid">
-                                {trackedProducts.map(
-                                    (product) => (
-                                        <article
-                                            className="tracked-card"
-                                            key={product.id}
-                                        >
-                                            <div className="tracked-card-top">
-                                                <span className="product-category">
-                                                    TRACKING
-                                                </span>
-
-                                                <span className="product-id">
-                                                    #
-                                                    {
-                                                        product.store_product_id
-                                                    }
-                                                </span>
-                                            </div>
-
-                                            <h3>
-                                                {
-                                                    product.product_name
-                                                }
-                                            </h3>
-
-                                            <p className="tracked-option">
-                                                {
-                                                    product.option_label
-                                                }
-                                            </p>
-
-                                            <div className="tracked-card-footer">
-                                                <span>
-                                                    Added{" "}
-                                                    {new Date(
-                                                        product.created_at
-                                                    ).toLocaleDateString()}
-                                                </span>
-
-                                                <button
-                                                    type="button"
-                                                    className="history-button"
-                                                    onClick={() =>
-                                                        loadPriceHistory(
-                                                            product.id
-                                                        )
-                                                    }
-                                                >
-                                                    {historyProductId ===
-                                                    product.id
-                                                        ? "Refreshing..."
-                                                        : "View History"}
-                                                </button>
-                                            </div>
-
-                                            {historyProductId ===
-                                                product.id && (
-                                                <div className="history-panel">
-                                                    <div className="history-panel-header">
-                                                        <div>
-                                                            <p className="section-label">
-                                                                PRICE
-                                                                HISTORY
-                                                            </p>
-
-                                                            <h4>
-                                                                Scrape
-                                                                attempts
-                                                            </h4>
-                                                        </div>
-
-                                                        <button
-                                                            type="button"
-                                                            className="close-history"
-                                                            onClick={
-                                                                closeHistory
-                                                            }
-                                                        >
-                                                            Close
-                                                        </button>
-                                                    </div>
-
-                                                    {historyLoading && (
-                                                        <div className="history-loading">
-                                                            Loading
-                                                            history...
-                                                        </div>
-                                                    )}
-
-                                                    {!historyLoading &&
-                                                        priceHistory.length ===
-                                                            0 && (
-                                                            <div className="history-loading">
-                                                                No scrape
-                                                                history
-                                                                available.
-                                                            </div>
-                                                        )}
-
-                                                    {!historyLoading &&
-                                                        priceHistory.length >
-                                                            0 && (
-                                                            <div className="history-list">
-                                                                {priceHistory
-                                                                    .slice()
-                                                                    .reverse()
-                                                                    .map(
-                                                                        (
-                                                                            record
-                                                                        ) => (
-                                                                            <div
-                                                                                className="history-row"
-                                                                                key={
-                                                                                    record.id
-                                                                                }
-                                                                            >
-                                                                                <div className="history-date">
-                                                                                    {new Date(
-                                                                                        record.scraped_at
-                                                                                    ).toLocaleString()}
-                                                                                </div>
-
-                                                                                <div className="history-price">
-                                                                                    {record.price !==
-                                                                                    null
-                                                                                        ? `₹${Number(
-                                                                                              record.price
-                                                                                          ).toLocaleString(
-                                                                                              "en-IN"
-                                                                                          )}`
-                                                                                        : "—"}
-                                                                                </div>
-
-                                                                                <div className="history-stock">
-                                                                                    {record.stock !==
-                                                                                    null
-                                                                                        ? `${record.stock} in stock`
-                                                                                        : "—"}
-                                                                                </div>
-
-                                                                                <span
-                                                                                    className={`history-outcome history-${record.outcome}`}
-                                                                                >
-                                                                                    {
-                                                                                        record.outcome
-                                                                                    }
-                                                                                </span>
-                                                                            </div>
-                                                                        )
-                                                                    )}
-                                                            </div>
-                                                        )}
-                                                </div>
-                                            )}
-                                        </article>
-                                    )
-                                )}
-                            </div>
-                        )}
-                </section>
 
                 {/* SEARCH RESULTS */}
 
@@ -546,170 +352,393 @@ function App() {
                         </div>
                     )}
 
-                {/* SELECTED PRODUCT DETAILS */}
-
-                {selectedProduct && (
-                    <section className="product-details">
-                        <div className="details-header">
-                            <div>
-                                <p className="section-label">
-                                    SELECTED PRODUCT
-                                </p>
-
-                                <h2>
-                                    {selectedProduct.name}
-                                </h2>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="close-details"
-                                onClick={
-                                    closeProductDetails
-                                }
-                            >
-                                Close
-                            </button>
-                        </div>
-
-                        {detailsLoading && (
-                            <div className="empty-state">
-                                Loading product options...
-                            </div>
-                        )}
-
-                        {productDetails && (
-                            <div className="options-panel">
-                                <p className="option-axis">
-                                    Choose{" "}
-                                    {
-                                        productDetails.optionAxis
-                                    }
-                                </p>
-
-                                <div className="option-grid">
-                                    {productDetails.options.map(
-                                        (option) => (
-                                            <button
-                                                type="button"
-                                                key={option.id}
-                                                className={`option-card ${
-                                                    selectedOption?.id ===
-                                                    option.id
-                                                        ? "option-card-selected"
-                                                        : ""
-                                                }`}
-                                                onClick={() =>
-                                                    setSelectedOption(
-                                                        option
-                                                    )
-                                                }
-                                            >
-                                                <span>
-                                                    {
-                                                        option.label
-                                                    }
-                                                </span>
-
-                                                <small>
-                                                    {
-                                                        option.id
-                                                    }
-                                                </small>
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-
-                                {selectedOption && (
-                                    <>
-                                        <p className="selected-option-text">
-                                            Selected:{" "}
-                                            <strong>
-                                                {
-                                                    selectedOption.label
-                                                }
-                                            </strong>
-                                        </p>
-
-                                        <div className="track-option-area">
-                                            <button
-                                                type="button"
-                                                className="track-option-button"
-                                                onClick={
-                                                    trackSelectedOption
-                                                }
-                                                disabled={
-                                                    tracking
-                                                }
-                                            >
-                                                {tracking
-                                                    ? "Adding..."
-                                                    : "Track This Option"}
-                                            </button>
-
-                                            {trackingMessage && (
-                                                <p className="tracking-success">
-                                                    {
-                                                        trackingMessage
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </section>
-                )}
-
                 {/* PRODUCT CARDS */}
 
                 <div className="product-grid">
-                    {products.map((product) => (
-                        <article
-                            className="product-card"
-                            key={product.id}
-                        >
-                            <div className="product-card-top">
-                                <span className="product-category">
-                                    {product.category}
-                                </span>
+                    {products.map((product) => {
+                        const isSelected =
+                            selectedProduct?.id === product.id;
 
-                                <span className="product-id">
-                                    #{product.id}
-                                </span>
-                            </div>
+                        return (
+                            <article
+                                className={`product-card ${
+                                    isSelected
+                                        ? "product-card-selected"
+                                        : ""
+                                }`}
+                                key={product.id}
+                            >
 
-                            <h3>{product.name}</h3>
+                                <div className="product-card-top">
+                                    <span className="product-category">
+                                        {product.category}
+                                    </span>
 
-                            <p className="product-brand">
-                                {product.brand}
-                            </p>
+                                    <span className="product-id">
+                                        #{product.id}
+                                    </span>
+                                </div>
 
-                            <p className="product-description">
-                                {product.description}
-                            </p>
+                                <h3>
+                                    {product.name}
+                                </h3>
 
-                            <div className="product-footer">
-                                <span>
-                                    {product.sku}
-                                </span>
+                                <p className="product-brand">
+                                    {product.brand}
+                                </p>
 
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        selectProduct(
-                                            product
-                                        )
-                                    }
-                                >
-                                    Select
-                                </button>
-                            </div>
-                        </article>
-                    ))}
+                                <p className="product-description">
+                                    {product.description}
+                                </p>
+
+                                <div className="product-footer">
+                                    <span>
+                                        {product.sku}
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            selectProduct(product)
+                                        }
+                                    >
+                                        {isSelected
+                                            ? "Selected"
+                                            : "Select"}
+                                    </button>
+                                </div>
+
+                                {/* INLINE PRODUCT OPTIONS */}
+
+                                {isSelected && (
+                                    <div className="product-inline-details">
+
+                                        <div className="details-header">
+                                            <div>
+                                                <p className="section-label">
+                                                    SELECTED PRODUCT
+                                                </p>
+
+                                                <h2>
+                                                    {selectedProduct.name}
+                                                </h2>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                className="close-details"
+                                                onClick={
+                                                    closeProductDetails
+                                                }
+                                            >
+                                                Close
+                                            </button>
+                                        </div>
+
+                                        {detailsLoading && (
+                                            <div className="empty-state">
+                                                Loading product options...
+                                            </div>
+                                        )}
+
+                                        {productDetails && (
+                                            <div className="options-panel">
+
+                                                <p className="option-axis">
+                                                    Choose{" "}
+                                                    {
+                                                        productDetails.optionAxis
+                                                    }
+                                                </p>
+
+                                                <div className="option-grid">
+                                                    {productDetails.options.map(
+                                                        (option) => (
+                                                            <button
+                                                                type="button"
+                                                                key={option.id}
+                                                                className={`option-card ${
+                                                                    selectedOption?.id ===
+                                                                    option.id
+                                                                        ? "option-card-selected"
+                                                                        : ""
+                                                                }`}
+                                                                onClick={() =>
+                                                                    setSelectedOption(
+                                                                        option
+                                                                    )
+                                                                }
+                                                            >
+                                                                <span>
+                                                                    {
+                                                                        option.label
+                                                                    }
+                                                                </span>
+
+                                                                <small>
+                                                                    {
+                                                                        option.id
+                                                                    }
+                                                                </small>
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+
+                                                {selectedOption && (
+                                                    <>
+                                                        <p className="selected-option-text">
+                                                            Selected:{" "}
+                                                            <strong>
+                                                                {
+                                                                    selectedOption.label
+                                                                }
+                                                            </strong>
+                                                        </p>
+
+                                                        <div className="track-option-area">
+
+                                                            <button
+                                                                type="button"
+                                                                className="track-option-button"
+                                                                onClick={
+                                                                    trackSelectedOption
+                                                                }
+                                                                disabled={
+                                                                    tracking
+                                                                }
+                                                            >
+                                                                {tracking
+                                                                    ? "Adding..."
+                                                                    : "Track This Option"}
+                                                            </button>
+
+                                                            {trackingMessage && (
+                                                                <p className="tracking-success">
+                                                                    {
+                                                                        trackingMessage
+                                                                    }
+                                                                </p>
+                                                            )}
+
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                            </div>
+                                        )}
+
+                                    </div>
+                                )}
+
+                            </article>
+                        );
+                    })}
                 </div>
+
+                {/* TRACKED PRODUCTS */}
+
+                <section className="tracked-section">
+
+                    <div className="section-header">
+                        <div>
+                            <p className="section-label">
+                                YOUR TRACKED PRODUCTS
+                            </p>
+
+                            <h2>
+                                Products you're monitoring
+                            </h2>
+                        </div>
+
+                        <div className="tracked-header-actions">
+                            {trackedProducts.length > 0 && (
+                                <>
+                                    <span className="result-count">
+                                        {trackedProducts.length} tracked
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        className="export-button"
+                                        onClick={exportCsv}
+                                    >
+                                        EXPORT CSV
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {trackedLoading && (
+                        <div className="empty-state">
+                            Loading tracked products...
+                        </div>
+                    )}
+
+                    {!trackedLoading &&
+                        trackedProducts.length === 0 && (
+                            <div className="empty-state">
+                                No products are being tracked yet.
+                            </div>
+                        )}
+
+                    {!trackedLoading &&
+                        trackedProducts.length > 0 && (
+                            <div className="tracked-grid">
+                                {trackedProducts.map((product) => (
+                                    <article
+                                        className="tracked-card"
+                                        key={product.id}
+                                    >
+
+                                        <div className="tracked-card-top">
+                                            <span className="product-category">
+                                                TRACKING
+                                            </span>
+
+                                            <span className="product-id">
+                                                #{product.store_product_id}
+                                            </span>
+                                        </div>
+
+                                        <h3>
+                                            {product.product_name}
+                                        </h3>
+
+                                        <p className="tracked-option">
+                                            {product.option_label}
+                                        </p>
+
+                                        <div className="tracked-card-footer">
+                                            <span>
+                                                Added{" "}
+                                                {new Date(
+                                                    product.created_at
+                                                ).toLocaleDateString()}
+                                            </span>
+
+                                            <button
+                                                type="button"
+                                                className="history-button"
+                                                onClick={() =>
+                                                    loadPriceHistory(
+                                                        product.id
+                                                    )
+                                                }
+                                            >
+                                                {historyProductId ===
+                                                product.id
+                                                    ? "Refreshing..."
+                                                    : "View History"}
+                                            </button>
+                                        </div>
+
+                                        {historyProductId ===
+                                            product.id && (
+                                            <div className="history-panel">
+
+                                                <div className="history-panel-header">
+                                                    <div>
+                                                        <p className="section-label">
+                                                            PRICE HISTORY
+                                                        </p>
+
+                                                        <h4>
+                                                            Scrape attempts
+                                                        </h4>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        className="close-history"
+                                                        onClick={
+                                                            closeHistory
+                                                        }
+                                                    >
+                                                        Close
+                                                    </button>
+                                                </div>
+
+                                                {historyLoading && (
+                                                    <div className="history-loading">
+                                                        Loading history...
+                                                    </div>
+                                                )}
+
+                                                {!historyLoading &&
+                                                    priceHistory.length ===
+                                                        0 && (
+                                                        <div className="history-loading">
+                                                            No scrape history
+                                                            available.
+                                                        </div>
+                                                    )}
+
+                                                {!historyLoading &&
+                                                    priceHistory.length >
+                                                        0 && (
+                                                        <div className="history-list">
+                                                            {priceHistory
+                                                                .slice()
+                                                                .reverse()
+                                                                .map(
+                                                                    (
+                                                                        record
+                                                                    ) => (
+                                                                        <div
+                                                                            className="history-row"
+                                                                            key={
+                                                                                record.id
+                                                                            }
+                                                                        >
+                                                                            <div className="history-date">
+                                                                                {new Date(
+                                                                                    record.scraped_at
+                                                                                ).toLocaleString()}
+                                                                            </div>
+
+                                                                            <div className="history-price">
+                                                                                {record.price !==
+                                                                                null
+                                                                                    ? `₹${Number(
+                                                                                          record.price
+                                                                                      ).toLocaleString(
+                                                                                          "en-IN"
+                                                                                      )}`
+                                                                                    : "—"}
+                                                                            </div>
+
+                                                                            <div className="history-stock">
+                                                                                {record.stock !==
+                                                                                null
+                                                                                    ? `${record.stock} in stock`
+                                                                                    : "—"}
+                                                                            </div>
+
+                                                                            <span
+                                                                                className={`history-outcome history-${record.outcome}`}
+                                                                            >
+                                                                                {
+                                                                                    record.outcome
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                        </div>
+                                                    )}
+
+                                            </div>
+                                        )}
+
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+
+                </section>
+
             </section>
         </main>
     );
