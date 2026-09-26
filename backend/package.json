@@ -1,0 +1,21 @@
+{
+  "name": "price-tracker-backend",
+  "version": "1.0.0",
+  "description": "Backend for the Price Tracker application",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "axios": "^1.20.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "playwright": "^1.63.0"
+  }
+}
