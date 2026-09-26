@@ -1,0 +1,21 @@
+name: Scheduled Price Scrape
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"
+
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger scheduled scrape
+        env:
+          SCHEDULER_SECRET: ${{ secrets.SCHEDULER_SECRET }}
+        run: |
+          curl --fail-with-body \
+            -X POST \
+            "https://price-tracker-5350.onrender.com/api/scheduler/scrape" \
+            -H "x-scheduler-secret: ${SCHEDULER_SECRET}"
